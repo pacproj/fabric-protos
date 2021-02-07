@@ -35,6 +35,9 @@ enum HeaderType {
     ORDERER_TRANSACTION = 4;         // Used internally by the orderer for management
     DELIVER_SEEK_INFO = 5;           // Used as the type for Envelope messages submitted to instruct the Deliver API to seek
     CHAINCODE_PACKAGE = 6;           // Used for packaging chaincode artifacts for install
+    PAC_PREPARE_TRANSACTION = 7;     // Used for private atomic commit (prepare stage)
+    PAC_DECIDE_TRANSACTION = 8;      // Used for private atomic commit (decide stage)
+    PAC_ABORT_TRANSACTION = 9;       // Used for private atomic commit (abort stage)
 }
 
 // This enum enlists indexes of the block metadata array
