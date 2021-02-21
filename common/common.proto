@@ -35,6 +35,9 @@ enum HeaderType {
     ORDERER_TRANSACTION = 4;         // Used internally by the orderer for management
     DELIVER_SEEK_INFO = 5;           // Used as the type for Envelope messages submitted to instruct the Deliver API to seek
     CHAINCODE_PACKAGE = 6;           // Used for packaging chaincode artifacts for install
+    PAC_PREPARE_TRANSACTION = 10;     // Used for private atomic commit (prepare stage)
+    PAC_DECIDE_TRANSACTION = 11;      // Used for private atomic commit (decide stage)
+    PAC_ABORT_TRANSACTION = 12;       // Used for private atomic commit (abort stage)
 }
 
 // This enum enlists indexes of the block metadata array
@@ -123,6 +126,7 @@ message Payload {
     Header header = 1;
 
     // Data, the encoding of which is defined by the type in the header
+    // or marshalled PACTxEnvelope if ChannelHeader.type==PrepareTx/DecideTx/AbortTx
     bytes data = 2;
 }
 
@@ -133,6 +137,50 @@ message Envelope {
 
     // A signature by the creator specified in the Payload header
     bytes signature = 2;
+}
+
+//PACTxEnvelope wraps PAC transactions
+message PACTxEnvelope {
+    // Header types 0-10000 are reserved and defined by HeaderType
+    int32 tx_type = 1; 
+    
+    // A marshaled Payload
+    bytes payload = 2; 
+    
+    //A marshaled PACTxValidationData
+    repeated bytes signed_validation_data = 3;
+}
+
+//private atomic commit transaction data, which is supposed to validate in function Validate()
+//in the file: /github.com/hyperledger/fabric/core/committer/txvalidator/v20/validator.go
+message PACTxValidationData {
+    // Header is included to provide identity and prevent replay
+    //TODO: decide if header is needed here
+    Header header = 1;
+
+    //A marshalled specific validation data for PAC transactions:
+    //HashPair              for PrepareTx in tx_type;
+    //VsrResponse           for DecideTx in tx_type;
+    //empty string          for AbortTx in tx_type.
+    //TODO: decide if some validation data is needed for AbortTx
+    bytes validation_data = 2;
+    
+    // A signature of the validation_data by the creator specified in the header
+    bytes signature = 3;
+
+}
+
+//HashPair is pair of hashes returned from endorser peer to form PrepareTx
+message HashPair {
+    //Hashed Vsr endorser shard response (hashed positive response)
+    bytes hashedVsr = 1;
+    //Hashed Nsr endorser shard response (hashed negative response)
+    bytes hashedNsr = 2;
+}
+
+message VsrResponse {
+    //the positive response from the endorser peer.
+    bytes Vsr = 1;
 }
 
 // This is finalized block structure to be shared among the orderer and peer
